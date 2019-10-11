@@ -1,0 +1,107 @@
+module lab4_part4(SW, LEDR, HEX0, HEX1, HEX4, HEX5);
+	input [9:0] SW;
+	output [9:0] LEDR;
+	output [6:0] HEX0, HEX1, HEX4, HEX5;
+
+	wire z, check_x, check_y;
+	wire [4:0] s;
+	wire [3:0] x, y, A, B, d0_in, final_d0, final_d1;
+
+	assign x = SW[3:0];
+	assign y = SW[7:4];
+	display_d0 x1(x, HEX5);
+	display_d0 y1(y, HEX4);
+
+	fa f1(SW, s);
+	assign LEDR[0] = s[0];
+	assign LEDR[1] = s[1];
+	assign LEDR[2] = s[2];
+	assign LEDR[3] = s[3];
+	assign LEDR[4] = s[4];
+
+	comparator comp_sum(s[3:0], z);
+	comparator check_1(SW[3:0], check_x);
+	comparator check_2(SW[7:4], check_y);
+	assign final_d1 = z | s[4];
+	assign LEDR[9] = check_x | check_y;
+
+	display_d0 d1(final_d1, HEX1);
+
+	get_a a(s[3:0], A);
+	mux4b_2to1 mux_1(z, s[3:0], A, d0_in);
+	get_b b(s[3:0], B);
+	mux4b_2to1 mux_2(s[4], d0_in, B, final_d0);
+
+	display_d0 d0(final_d0, HEX0);
+endmodule
+
+module fa(SW,out);
+	input [8:0] SW;
+	output [4:0] out;
+	wire c1,c2,c3;
+
+	fulladder a1(SW[0],SW[4],SW[8], out[0],c1);
+	fulladder a2(SW[1],SW[5],c1, out[1],c2);
+	fulladder a3(SW[2],SW[6],c2, out[2],c3);
+	fulladder a4(SW[3],SW[7],c3, out[3],out[4]);
+endmodule
+
+module full_adder(a, b, c_in, sum, c_out);
+	input a, b, c_in;
+	output sum, c_out;
+
+	assign sum = a^b^c_in;
+	assign c_out = (a & c_in) | (b & c_in) | (b & a);
+endmodule
+
+module display_d0 (input [3:0]s, output [6:0]disp);
+	wire c0, c1, c2, c3;
+	assign c0=s[0];
+	assign c1=s[1];
+	assign c2=s[2];
+	assign c3=s[3];
+
+	assign disp[0] = (~c3&~c2&~c1&c0)|(~c1&~c0&c2)|(c3&c2)|(c1&c3);
+	assign disp[1] = (~c1&c0&c2)|(c1&~c0&c2)|(c3&c2)|(c1&c3);
+	assign disp[2] = (c1&~c0&~c2)|(c3&c2)|(c1&c3);
+	assign disp[3] = (~c1&c0&~c2)|(~c1&~c0&c2)|(c1&c2&c0)|(c3&c2)|(c1&c3);
+	assign disp[4] = (c1|c0|c2)&(~c1|c0|c3);
+	assign disp[5] = (~c3&~c2&c0)|(~c3&~c2&c1)|(c1&c0)|(c3&c2)|(c1&c3);
+	assign disp[6] = (~c3&~c2&~c1)|(c1&c2&c0)|(c3&c2)|(c1&c3);
+endmodule
+
+module comparator(input [3:0]v, output z);
+	assign z = v[3] & (v[2] | v[1]);
+endmodule
+
+module get_a(v, a);
+	input [3:0]v;
+	input carry;
+	output [3:0]a;
+
+	assign a[3] = (1'b0);
+	assign a[2] = v[2] & v[1];
+	assign a[1] = ~v[1];
+	assign a[0] = v[0];
+endmodule
+
+module get_b(s, b);
+	input [3:0]s;
+	output [3:0]b;
+
+	assign b[3] = s[1];
+	assign b[2] = ~s[1];
+	assign b[1] = ~s[1];
+	assign b[0] = s[0];
+endmodule
+
+module mux4b_2to1(s, x, y, z);
+	input [3:0]x, y;
+	input s;
+	output [3:0]z;
+
+	assign z[0] = (~s&x[0])|(s&y[0]);
+	assign z[1] = (~s&x[1])|(s&y[1]);
+	assign z[2] = (~s&x[2])|(s&y[2]);
+	assign z[3] = (~s&x[3])|(s&y[3]);
+endmodule

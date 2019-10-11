@@ -1,0 +1,75 @@
+module lab4_part3(input [9:0]SW, output LEDR[9:0]);
+	wire c0, c1, c2, c3, s0, s1, s2, s3;
+
+	full_adder f0(SW[0], SW[4], SW[8], s0, c0)
+	full_adder f1(SW[1], SW[5], c0, s1, c1)
+	full_adder f2(SW[2], SW[6], c1, s2, c2)
+	full_adder f3(SW[3], SW[7], c2, s3, c3)
+
+	assign LEDR[0] = s0;
+	assign LEDR[1] = s1;
+	assign LEDR[2] = s2;
+	assign LEDR[3] = s3;
+	assign LEDR[4] = c3;
+endmodule
+
+module full_adder(a, b, c_in, sum, c_out);
+	input a, b, c_in;
+	output sum, c_out;
+
+	assign sum = a^b^c_in;
+	assign c_out = (a & c_in) | (b & c_in) | (b & a);
+endmodule
+
+
+
+
+
+module lab4_part5(SW, LEDR, HEX0, HEX1, HEX4, HEX5);
+	input [9:0] SW;
+	output [9:0] LEDR;
+	output [6:0] HEX0, HEX1, HEX4, HEX5;
+
+	wire z, check_x, check_y;
+	wire [4:0] s;
+	wire [3:0] A, B;
+	reg [3:0] d0, d1;
+
+	display_d0 x(SW[3:0], HEX5);
+	display_d0 y(SW[7:4], HEX4);
+
+	full_adder_4b(SW[3:0], SW[7:4], SW[8], s);
+	assign LEDR[0] = s[0];
+	assign LEDR[1] = s[1];
+	assign LEDR[2] = s[2];
+	assign LEDR[3] = s[3];
+	assign LEDR[4] = s[4];
+
+	comparator comp_x(SW[3:0], check_x);
+	comparator comp_y(SW[7:4], check_y);
+	assign LEDR[9] = check_x | check_y;
+
+	comparator comp_sum(s[3:0], z);
+	get_a a(s[3:0], A);
+	get_b b(s[3:0], B);
+
+	always @(d0, d1)
+		if (s[4] == 1)
+		begin
+			d0 = B;
+			d1 = 4'b1;
+		end
+		else if (z == 1)
+		begin
+			d0 = A;
+			d1 = 4'b1;
+		end
+		else
+		begin
+			d0 = s[3:0];
+			d1 = 4'b0;
+		end
+	end
+	display_d0 d0(d0, HEX0);
+	display_d1 d1(d1, HEX1);
+endmodule
