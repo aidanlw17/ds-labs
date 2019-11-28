@@ -1,0 +1,167 @@
+Part 3
+
+module part3(SW, KEY, CLOCK_50, LEDR);
+	input [2:0]SW;
+	input [1:0]KEY;
+	input CLOCK_50;
+	output [9:0]LEDR;
+
+	wire [3:0] len, code;
+	wire enbl;
+
+	select_letter f0(SW, code, len);
+	enabler f1(CLOCK_50, enbl);
+
+	get_state f2(KEY[1], KEY[0], code, len, CLOCK_50, enbl, LEDR[0]);
+endmodule
+
+module get_state(beg, end, code, len, clk, enbl, z);
+	input beg, end, clk, enbl;
+	input [3:0]code, len;
+	output z;
+	reg [3:0] l, enc;
+	reg [2:0] y_c, y_n
+
+	// Define state parameters
+	parameter a=3'b000,
+			  b=3'b001,
+			  c=3'b010,
+			  d=3'b011,
+			  e=3'b100;
+
+	always @(*)
+		begin
+		case (y)
+			a: if(!start)
+				y_n=b;
+			   else
+			    y_n=a;
+			b: if(enc[3])
+				y_n=c;
+			   else
+			   	y_n=e;
+			c: y_n=d;
+			d: y_n=e;
+			e: if(!l[3])
+				y_n=a;
+			   else
+			   	y_n=b;
+			default: y_n=3'b000;
+		endcase
+		end
+
+	always @(posedge clk)
+		begin
+		if (enbl)
+			begin
+			y_c<=y_n;
+			
+			if(y_n==a)
+				begin
+				l<=len;
+				enc<=code;
+				end
+
+			if(!end)
+				y_c<=a;
+
+			else
+				if(y_n==e)
+					begin
+					enc[3]<=enc[2];
+					enc[2]<=enc[1];
+					enc[1]<=enc[0]
+					enc[0]<=1'b0;
+
+					l[3]<=l[2];
+					l[2]<=l[1];
+					l[1]<=l[0];
+					l[0]<=1'b0;
+					end
+			end
+		end
+
+	assign z=(y_c==b)|(y_c==c)|(y_c==d);
+endmodule
+
+module select_letter(switch, code, l)
+	input [2:0]switch;
+	output reg [3:0]code, l;
+
+	parameter J=3'b000;
+			  K=3'b001;
+			  L=3'b010;
+			  M=3'b011;
+			  N=3'b100;
+			  O=3'b101;
+			  P=3'b110;
+			  Q=3'b111;
+
+	always @(switch)
+		begin
+		case(switch)
+		   J:
+		   	begin
+		    code=4'b0111;
+		    l=4'b1111;
+		    end
+		   K:
+		   	begin
+		    code=4'b1010;
+		    l=4'b1110;
+		    end
+		   L:
+		    begin
+		    code=4'b0100;
+		    l=4'b1111;
+		    end
+		   M:
+		    begin
+		    code=4'b1100;
+		    l=4'b1100;
+		    end
+		   N:
+		    begin
+		    code=4'b1000;
+		    l=4'b1100;
+		    end
+		   O:
+		    begin
+		    code=4'b1110;
+		    l=4'b1110;
+		    end
+		   P:
+		    begin
+		    code=4'b0110;
+		    l=4'b1111;
+		    end
+		   Q:
+		    begin
+		    code=4'b1101;
+		    l=4'b1111;
+		    end
+		endcase
+	end
+endmodule
+
+module enabler(clk, enbl);
+	input clk;
+	output reg enbl;
+	reg [24:0] cnt;
+
+	always(@posedge clk)
+		if(cnt==25000000)
+			begin
+			cnt<=0;
+			enbl<=1;
+			end
+		else
+			begin
+			cnt<=cnt+1;
+			enbl<=0;
+			end
+endmodule
+
+
+
+

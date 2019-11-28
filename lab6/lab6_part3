@@ -1,0 +1,132 @@
+module lab6p3(input [1:0]KEY, input [2:0]SW, input CLOCK_50, output [0:0]LEDR);
+ wire [3:0] length;
+ wire [3:0] morse;
+ wire enable;
+ 
+ letter ls (SW[2:0], morse[3:0], length[3:0]);
+ clock_enable (CLOCK_50, enable);
+ state_mh (KEY[1], KEY[0], morse[3:0], length[3:0], CLOCK_50, enable, LEDR[0]);
+
+endmodule
+
+module state_mh (input start, input stop, input [3:0]morse, input [3:0]length, input clock, input enable, output [0:0]z_out);
+
+ reg [3:0] len_c;
+ reg [2:0] yc, yn;
+ reg [3:0] morser;
+ 
+
+ parameter a = 3'b000, b = 3'b001, c = 3'b010, d = 3'b011, e = 3'b100;
+ 
+ always @(*) begin
+  case (yc)
+   a: if (!start)
+     yn = b;
+    else
+     yn = a;
+     
+   b: if (morser[3])
+     yn = c;       
+    else
+     yn = e;     
+    
+   c: yn = d;
+   
+   d: yn = e;
+   
+   e: if (!len_c[3])
+     yn = a;
+    else
+     yn = b;
+     
+   default: yn = 3'b000;
+   endcase
+  end
+
+  always @(posedge clock) begin
+   if (enable) begin
+    yc <= yn;
+    
+    if (yn == a) begin
+     len_c <= length;
+     morser <= morse;
+    end
+    
+    if (!stop)
+     yc <= a;
+    else
+     if (yn == e) begin
+     morser[3] <= morser[2];    
+     morser[2] <= morser[1];
+     morser[1] <= morser[0];
+     morser[0] <= 1'b0;
+     len_c[3] <= len_c[2];
+     len_c[2] <= len_c[1];
+     len_c[1] <= len_c[0];
+     len_c[0] <= 1'b0;
+    end
+   end
+  end
+  
+  
+ // assigns out
+ assign z_out[0] = (yc == b) | (yc == c) | (yc == d);
+  
+endmodule
+
+module letter(input [2:0] selector, output reg[3:0] morse, output reg[3:0] len);
+  // defines patterns
+ parameter J = 3'b000, K = 3'b001, L = 3'b010, M = 3'b011, N = 3'b100, O = 3'b101, P = 3'b110, Q = 3'b111;
+
+ always @(selector) begin
+  case (selector[2:0])
+   J: begin
+    morse = 4'b0111;
+    len = 4'b1111;
+    end
+   K: begin
+    morse = 4'b1010;
+    len = 4'b1110;
+    end
+   L: begin
+    morse = 4'b0100;
+    len = 4'b1111;
+    end
+   M: begin
+    morse = 4'b1100;
+    len = 4'b1100;
+    end
+   N: begin
+    morse = 4'b1000;
+    len = 4'b1100;
+    end
+   O: begin
+    morse = 4'b1110;
+    len = 4'b1110;
+    end
+   P: begin
+    morse = 4'b0110;
+    len = 4'b1111;
+    end
+   Q: begin
+    morse = 4'b1101;
+    len = 4'b1111;
+    end
+  endcase
+ end
+ 
+endmodule
+
+module clock_enable(input CLOCKIN, output reg enable);
+ reg [24:0]counter;
+ 
+ always @(posedge CLOCKIN)
+  if (counter ==  25000000) begin
+   counter <= 0;
+   enable <= 1;
+  end
+  else begin
+   counter <= counter + 1;
+   enable <= 0;
+  end
+endmodule
